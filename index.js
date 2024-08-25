@@ -8,6 +8,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const assistantId = process.env.ASSISTANT_ID; // Ensure you set this in your environment variables
+
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -44,18 +46,17 @@ app.post("/chat", async (req, res) => {
 
     const runStart = Date.now();
     const run = await openai.beta.threads.runs.createAndPoll(thread_id, {
-      // Assuming you need to provide the assistant ID directly here
-      assistant_id: "assistant_id", // Replace with your actual assistant ID
+      assistant_id: assistantId, // Use the assistant ID from environment variables
     });
     const runEnd = Date.now();
     console.log(`Run creation and polling took ${runEnd - runStart} ms`);
 
     const messagesStart = Date.now();
-    const messages = await openai.beta.threads.messages.list(run.thread_id);
+    const messages = await openai.beta.threads.messages.list(thread_id); // Check if the method name and usage are correct
     const messagesEnd = Date.now();
     console.log(`Messages listing took ${messagesEnd - messagesStart} ms`);
 
-    const response = messages.data[0].content[0].text.value;
+    const response = messages.data.length > 0 ? messages.data[0].content[0].text.value : "No response";
     console.log(`Response sent at ${new Date().toISOString()}, total time ${Date.now() - startTime} ms`);
 
     return res.json({ response });
