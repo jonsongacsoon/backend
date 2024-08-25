@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const OpenAI = require("openai");
-const { createAssistant } = require("./openai.service"); // Ensure this is updated
 
 const app = express();
 const openai = new OpenAI({
@@ -11,8 +10,6 @@ const openai = new OpenAI({
 
 app.use(cors());
 app.use(bodyParser.json());
-
-let assistantCache = null;  // Cache the assistant object
 
 app.get("/start", async (req, res) => {
   try {
@@ -37,13 +34,6 @@ app.post("/chat", async (req, res) => {
   }
 
   try {
-    const assistantStart = Date.now();
-    if (!assistantCache) {
-      assistantCache = await createAssistant(openai);  // Load/create assistant if not cached
-    }
-    const assistantEnd = Date.now();
-    console.log(`Assistant setup took ${assistantEnd - assistantStart} ms`);
-
     const createMessageStart = Date.now();
     await openai.beta.threads.messages.create(thread_id, {
       role: "user",
@@ -54,7 +44,8 @@ app.post("/chat", async (req, res) => {
 
     const runStart = Date.now();
     const run = await openai.beta.threads.runs.createAndPoll(thread_id, {
-      assistant_id: assistantCache.id,
+      // Assuming you need to provide the assistant ID directly here
+      assistant_id: "YOUR_ASSISTANT_ID", // Replace with your actual assistant ID
     });
     const runEnd = Date.now();
     console.log(`Run creation and polling took ${runEnd - runStart} ms`);
