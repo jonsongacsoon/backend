@@ -42,20 +42,33 @@ app.post("/chat", async (req, res) => {
     const createMessageEnd = Date.now();
     console.log(`Message creation took ${createMessageEnd - createMessageStart} ms`);
 
+    // Adjusting the polling approach for performance
     const runStart = Date.now();
-    const run = await openai.beta.threads.runs.createAndPoll(thread_id, {
-      // Assuming you need to provide the assistant ID directly here
-      assistant_id: "asst_pe5TFV5zBJzlhqngKlCQ4Z2g", // Replace with your actual assistant ID
+    const run = await openai.beta.threads.runs.create(thread_id, {
+      assistant_id: "asst_pe5TFV5zBJzlhqngKlCQ4Z2g",
     });
+    
+    // Consider polling the run status in a more efficient way
+    // Example: Introduce a polling interval to check status periodically
+    let runCompleted = false;
+    let runResult = null;
+    while (!runCompleted) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Adjust the polling interval as needed
+      const runStatus = await openai.beta.threads.runs.getStatus(run.id);
+      if (runStatus.status === "completed") {
+        runResult = await openai.beta.threads.messages.list(run.thread_id);
+        runCompleted = true;
+      }
+    }
+
     const runEnd = Date.now();
     console.log(`Run creation and polling took ${runEnd - runStart} ms`);
 
     const messagesStart = Date.now();
-    const messages = await openai.beta.threads.messages.list(run.thread_id);
+    const response = runResult.data[0].content[0].text.value;
     const messagesEnd = Date.now();
     console.log(`Messages listing took ${messagesEnd - messagesStart} ms`);
 
-    const response = messages.data[0].content[0].text.value;
     console.log(`Response sent at ${new Date().toISOString()}, total time ${Date.now() - startTime} ms`);
 
     return res.json({ response });
