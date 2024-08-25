@@ -1,10 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const { createAssistant } = require("./openai.service");
-const app = express();
 const OpenAI = require("openai");
+const { createAssistant } = require("./openai.service"); // Ensure this is updated
 
+const app = express();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -16,10 +16,10 @@ let assistantCache = null;  // Cache the assistant object
 
 app.get("/start", async (req, res) => {
   try {
-    const threadStart = Date.now();
+    const startTime = Date.now();
     const thread = await openai.beta.threads.create();
-    const threadEnd = Date.now();
-    console.log(`Thread creation took ${threadEnd - threadStart} ms`);
+    const endTime = Date.now();
+    console.log(`Thread creation took ${endTime - startTime} ms`);
     return res.json({ thread_id: thread.id });
   } catch (error) {
     console.error("Error creating thread:", error);
