@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { createAssistant } = require("./openai.service");
-const fs = require("fs").promises;
 const app = express();
 const OpenAI = require("openai");
 
@@ -17,7 +16,10 @@ let assistantCache = null;  // Cache the assistant object
 
 app.get("/start", async (req, res) => {
   try {
+    const threadStart = Date.now();
     const thread = await openai.beta.threads.create();
+    const threadEnd = Date.now();
+    console.log(`Thread creation took ${threadEnd - threadStart} ms`);
     return res.json({ thread_id: thread.id });
   } catch (error) {
     console.error("Error creating thread:", error);
@@ -30,36 +32,37 @@ app.post("/chat", async (req, res) => {
   console.log(`Request received at ${new Date(startTime).toISOString()}`);
 
   const { thread_id, message } = req.body;
-
   if (!thread_id) {
     return res.status(400).json({ error: "Missing thread_id" });
   }
-
-  console.log(`Received message: ${message} for thread ID: ${thread_id}`);
 
   try {
     const assistantStart = Date.now();
     if (!assistantCache) {
       assistantCache = await createAssistant(openai);  // Load/create assistant if not cached
     }
-    console.log(`Assistant ready at ${new Date(assistantStart).toISOString()}, took ${assistantStart - startTime} ms`);
+    const assistantEnd = Date.now();
+    console.log(`Assistant setup took ${assistantEnd - assistantStart} ms`);
 
     const createMessageStart = Date.now();
     await openai.beta.threads.messages.create(thread_id, {
       role: "user",
       content: message,
     });
-    console.log(`Message created at ${new Date(createMessageStart).toISOString()}, took ${createMessageStart - assistantStart} ms`);
+    const createMessageEnd = Date.now();
+    console.log(`Message creation took ${createMessageEnd - createMessageStart} ms`);
 
     const runStart = Date.now();
     const run = await openai.beta.threads.runs.createAndPoll(thread_id, {
       assistant_id: assistantCache.id,
     });
-    console.log(`Run created and polled at ${new Date(runStart).toISOString()}, took ${runStart - createMessageStart} ms`);
+    const runEnd = Date.now();
+    console.log(`Run creation and polling took ${runEnd - runStart} ms`);
 
     const messagesStart = Date.now();
     const messages = await openai.beta.threads.messages.list(run.thread_id);
-    console.log(`Messages listed at ${new Date(messagesStart).toISOString()}, took ${messagesStart - runStart} ms`);
+    const messagesEnd = Date.now();
+    console.log(`Messages listing took ${messagesEnd - messagesStart} ms`);
 
     const response = messages.data[0].content[0].text.value;
     console.log(`Response sent at ${new Date().toISOString()}, total time ${Date.now() - startTime} ms`);
