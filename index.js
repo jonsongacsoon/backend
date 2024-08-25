@@ -49,12 +49,13 @@ app.post("/chat", async (req, res) => {
     const runEnd = Date.now();
     console.log(`Run creation took ${runEnd - runStart} ms`);
 
-    // Check if there's a method to get the run status
+    // Placeholder for checking run status
     let result = null;
     while (result === null) {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Adjust polling interval
       try {
-        result = await openai.threads.runs.get(run.id); // Replace with correct method
+        // Replace with correct method if available
+        result = await openai.threads.runs.get(run.id);
       } catch (error) {
         console.error("Error checking run status:", error);
       }
@@ -76,4 +77,5 @@ app.post("/chat", async (req, res) => {
 });
 
 app.listen(8080, () => {
-  console.log("Server running on p
+  console.log("Server running on port 8080");
+});
