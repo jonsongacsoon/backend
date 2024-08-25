@@ -14,7 +14,7 @@ app.use(bodyParser.json());
 app.get("/start", async (req, res) => {
   try {
     const startTime = Date.now();
-    const thread = await openai.threads.create();
+    const thread = await openai.beta.threads.create();
     const endTime = Date.now();
     console.log(`Thread creation took ${endTime - startTime} ms`);
     return res.json({ thread_id: thread.id });
@@ -35,7 +35,7 @@ app.post("/chat", async (req, res) => {
 
   try {
     const createMessageStart = Date.now();
-    await openai.threads.messages.create(thread_id, {
+    await openai.beta.threads.messages.create(thread_id, {
       role: "user",
       content: message,
     });
@@ -43,26 +43,15 @@ app.post("/chat", async (req, res) => {
     console.log(`Message creation took ${createMessageEnd - createMessageStart} ms`);
 
     const runStart = Date.now();
-    const run = await openai.threads.runs.create(thread_id, {
-      assistant_id: "asst_pe5TFV5zBJzlhqngKlCQ4Z2g",
+    const run = await openai.beta.threads.runs.createAndPoll(thread_id, {
+      // Assuming you need to provide the assistant ID directly here
+      assistant_id: "YOUR_ASSISTANT_ID", // Replace with your actual assistant ID
     });
     const runEnd = Date.now();
-    console.log(`Run creation took ${runEnd - runStart} ms`);
-
-    // Placeholder for checking run status
-    let result = null;
-    while (result === null) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Adjust polling interval
-      try {
-        // Replace with correct method if available
-        result = await openai.threads.runs.get(run.id);
-      } catch (error) {
-        console.error("Error checking run status:", error);
-      }
-    }
+    console.log(`Run creation and polling took ${runEnd - runStart} ms`);
 
     const messagesStart = Date.now();
-    const messages = await openai.threads.messages.list(thread_id);
+    const messages = await openai.beta.threads.messages.list(run.thread_id);
     const messagesEnd = Date.now();
     console.log(`Messages listing took ${messagesEnd - messagesStart} ms`);
 
