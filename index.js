@@ -45,7 +45,7 @@ app.post("/chat", async (req, res) => {
     const runStart = Date.now();
     const run = await openai.beta.threads.runs.createAndPoll(thread_id, {
       // Assuming you need to provide the assistant ID directly here
-      assistant_id: "YOUR_ASSISTANT_ID", // Replace with your actual assistant ID
+      assistant_id: "asst_pe5TFV5zBJzlhqngKlCQ4Z2g", // Replace with your actual assistant ID
     });
     const runEnd = Date.now();
     console.log(`Run creation and polling took ${runEnd - runStart} ms`);
