@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const OpenAI = require("openai");
 
 const app = express();
@@ -11,7 +10,7 @@ const openai = new OpenAI({
 const assistantId = process.env.ASSISTANT_ID; // Ensure you set this in your environment variables
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json()); // Use express.json() instead of body-parser
 
 app.get("/start", async (req, res) => {
   try {
@@ -27,19 +26,25 @@ app.get("/start", async (req, res) => {
 });
 
 app.post("/chat", async (req, res) => {
-  const startTime = Date.now();
-  console.log(`Request received at ${new Date(startTime).toISOString()}`);
-
-  const { thread_id, message } = req.body;
-  if (!thread_id) {
-    return res.status(400).json({ error: "Missing thread_id" });
-  }
-
   try {
+    const startTime = Date.now();
+    console.log(`Request received at ${new Date(startTime).toISOString()}`);
+
+    const { thread_id, message } = req.body;
+
+    // Validate and sanitize input
+    if (!thread_id || typeof message !== 'string') {
+      return res.status(400).json({ error: "Invalid input data" });
+    }
+
+    // Safely handle special characters in the message
+    const sanitizedMessage = JSON.stringify(message); // Convert to JSON string
+    const parsedMessage = JSON.parse(sanitizedMessage); // Parse it back to avoid injection
+
     const createMessageStart = Date.now();
     await openai.beta.threads.messages.create(thread_id, {
       role: "user",
-      content: message,
+      content: parsedMessage,
     });
     const createMessageEnd = Date.now();
     console.log(`Message creation took ${createMessageEnd - createMessageStart} ms`);
