@@ -7,17 +7,14 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const assistantId = process.env.ASSISTANT_ID; // Ensure you set this in your environment variables
+const assistantId = process.env.ASSISTANT_ID;
 
 app.use(cors());
-app.use(express.json()); // Use express.json() instead of body-parser
+app.use(express.json()); // Built-in middleware to parse JSON
 
 app.get("/start", async (req, res) => {
   try {
-    const startTime = Date.now();
     const thread = await openai.beta.threads.create();
-    const endTime = Date.now();
-    console.log(`Thread creation took ${endTime - startTime} ms`);
     return res.json({ thread_id: thread.id });
   } catch (error) {
     console.error("Error creating thread:", error);
@@ -27,42 +24,25 @@ app.get("/start", async (req, res) => {
 
 app.post("/chat", async (req, res) => {
   try {
-    const startTime = Date.now();
-    console.log(`Request received at ${new Date(startTime).toISOString()}`);
-
     const { thread_id, message } = req.body;
 
-    // Validate and sanitize input
+    // Ensure the required fields are present and valid
     if (!thread_id || typeof message !== 'string') {
       return res.status(400).json({ error: "Invalid input data" });
     }
 
-    // Safely handle special characters in the message
-    const sanitizedMessage = JSON.stringify(message); // Convert to JSON string
-    const parsedMessage = JSON.parse(sanitizedMessage); // Parse it back to avoid injection
-
-    const createMessageStart = Date.now();
+    // Process the message
     await openai.beta.threads.messages.create(thread_id, {
       role: "user",
-      content: parsedMessage,
+      content: message, // Already properly encoded by the frontend
     });
-    const createMessageEnd = Date.now();
-    console.log(`Message creation took ${createMessageEnd - createMessageStart} ms`);
 
-    const runStart = Date.now();
     const run = await openai.beta.threads.runs.createAndPoll(thread_id, {
-      assistant_id: assistantId, // Use the assistant ID from environment variables
+      assistant_id: assistantId,
     });
-    const runEnd = Date.now();
-    console.log(`Run creation and polling took ${runEnd - runStart} ms`);
 
-    const messagesStart = Date.now();
-    const messages = await openai.beta.threads.messages.list(thread_id); // Check if the method name and usage are correct
-    const messagesEnd = Date.now();
-    console.log(`Messages listing took ${messagesEnd - messagesStart} ms`);
-
+    const messages = await openai.beta.threads.messages.list(thread_id);
     const response = messages.data.length > 0 ? messages.data[0].content[0].text.value : "No response";
-    console.log(`Response sent at ${new Date().toISOString()}, total time ${Date.now() - startTime} ms`);
 
     return res.json({ response });
   } catch (error) {
